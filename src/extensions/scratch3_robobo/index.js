@@ -297,7 +297,7 @@ class Scratch3Robobo {
                 },
 
                 {
-                    opcode: 'readQRSensor',
+                    opcode: 'readQrSensor',
                     text: 'Read  qr sensor [TYPE] axis',
                     blockType: BlockType.REPORTER,
                     arguments: {
