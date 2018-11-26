@@ -27,6 +27,7 @@
 
 //Constructor of the remote control object
 function Remote(ip,passwd){
+  //process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0" 
   this.ip = ip.trim();
   this.port = 40404;
 
@@ -226,7 +227,7 @@ Remote.prototype = {
       if (this.callbackmap.get("onConnectionChanges")!=undefined){
           (this.callbackmap.get("onConnectionChanges"))(0);
       }
-      console.log("Error in websocket connection to Robobo: "+error);
+      console.log("Error in websocket connection to Robobo: "+JSON.stringify(error));
     }.bind(this);
 
     this.setIRValue('Back-R',0);
@@ -549,6 +550,10 @@ Remote.prototype = {
 
   },//ENDOF movePanWait
 
+  getNoise:function(){
+    return this.statusmap.get("noiselevel")
+
+  },
   /** Returns the current PAN position */
   getPan:function() {
     return this.statusmap.get("panPos")
@@ -1085,34 +1090,47 @@ Remote.prototype = {
 
   }, //ENDOF keepAliveMsg
 
+  /** Resets face detection sensor
+   * 
+   */
   resetFaceSensor : function() {
     //face sensor
     this.statusmap.set("facex",0);
     this.statusmap.set("facey",0);
     this.statusmap.set("facedist","far");
   },
-
+  /** Resets fling sensor
+   * 
+   */
   resetFlingSensor : function() {
     this.statusmap.set("flingangle",0);
   },
-
+  /** Resets tap detection sensor
+   * 
+   */
   resetTapSensor : function() {
     this.statusmap.set("tapx",0);
     this.statusmap.set("tapy",0);
   },
-
+  /** Resets orientation sensor
+   * 
+   */
   resetOrientationSensor : function() {
     this.statusmap.set("yaw",0);
     this.statusmap.set("pitch",0);
     this.statusmap.set("roll",0);
   },
-
+  /** Resets sensor
+   * 
+   */
   resetAccelerationSensor : function() {
     this.statusmap.set("xaccel",0);
     this.statusmap.set("yaccel",0);
     this.statusmap.set("zaccel",0);
   },
-
+    /** Resets sensor
+   * 
+   */
   resetIRs : function() {
     this.setIRValue('Back-R',0);
     this.setIRValue('Back-C',0);
@@ -1124,7 +1142,9 @@ Remote.prototype = {
     this.setIRValue('Back-L',0);
 
   },
-
+/** Resets blob tracking sensor
+   * 
+   */
   resetBlobSensor : function() {
     this.statusmap.set("blobPosxgreen",0);
     this.statusmap.set("blobPosygreen",0);
@@ -1139,15 +1159,21 @@ Remote.prototype = {
     this.statusmap.set("blobPosycustom",0);
     this.statusmap.set("blobSizecustom",0);
   },
-
+  /** Resets note detection sensor
+   * 
+   */
   resetNoteSensor : function() {
     this.statusmap.set("lastNote",0);
   },
-
+  /** Resets clap detection sensor
+   * 
+   */
   resetClapSensor : function() {
     this.statusmap.set("claps", 0);
   },
-
+  /** Resets all sensors
+   * 
+   */
   resetSensors : function () {
 
     this.resetFaceSensor();
@@ -1210,13 +1236,11 @@ Remote.prototype = {
   //TODO --> Move to base block or remove?
   getPanPosition : function () {
     return this.statusmap.get("panPos");
-    //END OF GETCOLOR FUNCTION
   },
 
   //TODO --> Move to base block or remove?
   getTiltPosition : function () {
     return this.statusmap.get("tiltPos");
-    //END OF GETCOLOR FUNCTION
   },
 
   callCallback : function(callbackName) {
@@ -1550,7 +1574,7 @@ Remote.prototype = {
 
     else if (msg.name == "QRCODEAPPEAR") {
       //console.log("NewQR");
-      console.log(msg.value)
+      //console.log(msg.value)
       this.statusmap.set("qrx",parseInt(msg.value["coordx"]));
       this.statusmap.set("qry",parseInt(msg.value["coordy"]));
       this.statusmap.set("qrdist",parseInt(msg.value["distance"]));
@@ -1576,6 +1600,12 @@ Remote.prototype = {
   
     }
 
+    else if (msg.name == "NOISE") {
+     
+      this.statusmap.set("noiselevel",parseFloat(msg.value["level"]));
+  
+    }
+
     else {
       console.log('Lost status '+ msg.name);
     }
@@ -1590,14 +1620,26 @@ Remote.prototype = {
 
   }, //ENDOF manageResponse
    
+  /**
+   * Convets a scratch angle to robobo angle
+   */
   scratchToRoboboAngle : function(angle){
     return angle +180;
   },
-
+  /**
+   * Convets a robobo angle to scratch angle
+   */
   roboboToScratchAngle: function(angle){
     return angle -180;
   },
 
+  /**
+   * Checks if a number is between other two
+   * @param {} input Number to be checked
+   * @param {*} type 'Between' or 'Outside'
+   * @param {*} r1 First range value
+   * @param {*} r2 Second range value
+   */
   rangeFun: function(input,type,r1,r2) {		
     	
     if (type == "between"){		

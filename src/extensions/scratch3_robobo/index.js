@@ -288,6 +288,7 @@ class Scratch3Robobo {
                         
                     }
                 },
+                
                 {
                     opcode: 'resetFaceSensor',
                     text: 'Reset face sensor',
@@ -296,11 +297,33 @@ class Scratch3Robobo {
                 },
 
                 {
+                    opcode: 'readQRSensor',
+                    text: 'Read  qr sensor [TYPE] axis',
+                    blockType: BlockType.REPORTER,
+                    arguments: {
+                        TYPE: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'x',
+                            menu: 'qrmenu',
+                        },
+                        
+                    }
+                },
+
+                {
                     opcode: 'readClapCounter',
                     text: 'Read  clap counter',
                     blockType: BlockType.REPORTER,
                    
                 },
+
+                {
+                    opcode: 'readNoiseLevel',
+                    text: 'Read  noise level',
+                    blockType: BlockType.REPORTER,
+                   
+                },
+
                 {
                     opcode: 'resetClapCounter',
                     text: 'Reset clap counter',
@@ -327,6 +350,7 @@ class Scratch3Robobo {
                     blockType: BlockType.COMMAND,
                     
                 },
+
 
                 {
                     opcode: 'readColorBlob',
@@ -541,6 +565,9 @@ class Scratch3Robobo {
                 ],
                 visionmenu: [
                     'x','y','distance'
+                ],
+                qrmenu: [
+                    'x','y','distance', 'id'
                 ],
                 notemenu:[
                     'note','duration'
@@ -845,6 +872,31 @@ class Scratch3Robobo {
         
     }
 
+    /** Returns the position, distance and id of the qr detected by the robot
+     * 
+     * Example of use:
+     * let face = robobo.readFaceSensor();
+     * console.log(face.distance); //the distance to the person
+     * console.log(face.x); //the position of the face in X axis
+     * console.log(fase.y); //the position of the face in Y axis
+     * 
+     * @returns the position and distance of the last face detected by the robot
+     */
+    readQrSensor(args, util) {
+        const {TYPE} = args;
+
+        if (TYPE == 'distance'){
+            return this.rem.getQRDist();
+        }else if (TYPE == 'x'){
+            return this.rem.getQRCoord('x');
+        }else if (TYPE == 'y'){
+            return this.rem.getQRCoord('y');
+        }else{
+            return this.rem.getQRId();
+        }
+                
+    }
+
     /** Resets the face sensor.
      * After this function, and until a new face is detected, the face sensor
      * will return 0 as values for distance, x and y position.
@@ -991,6 +1043,16 @@ class Scratch3Robobo {
         this.remote.resetTapSensor();
     }
 
+    /** Returns the noise level
+     *
+     *
+     * @returns {Integer} Noise SPL
+     * @memberof Robobo
+     */
+    readNoiseLevel() {
+        return this.rem.getNoise();
+    }
+    
     /**
      * Reads the orientation sensor
      * Warning: This sensor may not be available on all the devices
