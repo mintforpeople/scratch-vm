@@ -45,6 +45,7 @@ function Remote(ip, passwd) {
   this.statusmap = new Map();
 
   //Map of last relevant statuses, for comparations
+  // TODO: idk if this is used anywhere? Was considering using it for callback comparisons
   this.laststatusmap = new Map();
 
   //Map of callbacks registered by the extension
@@ -994,6 +995,78 @@ Remote.prototype = {
   /* VISION-BASED INTERACTION FUNCTIONS   *
   /***************************************/
 
+  // TO DO: add proper comments
+  startObjectDetection: function() {
+    // Should this be under vision or utility?
+    var message = JSON.stringify({
+      "name": "START-OBJECT-RECOGNITION",
+      "parameters": {},
+      "id": this.commandid
+    });
+    this.sendMessage(message);
+  },//ENDOF startObjectDetection
+
+  stopObjectDetection: function() {
+    var message = JSON.stringify({
+      "name": "STOP-OBJECT-RECOGNITION",
+      "parameters": {},
+      "id": this.commandid
+    });
+    this.sendMessage(message);
+  },//ENDOF stopObjectDetection
+
+  // Is there any difference between defining it this way vs the QR way?
+  //TODO: delete this function when done testing
+
+  //TODO: right now the effective default (i.e. the x you get before turning on the OD module
+  // for objects is 0, while for "any" it's undefined
+  // should probably make it consistent
+  readDetectedObject: function(){
+    return this.statusmap.get("detectedobjectmessage")
+  },
+
+  getObjectLabel: function(objectType){
+    if ((objectType == this.statusmap.get("objectlabel")) || (objectType == "any")) {
+      return this.statusmap.get("objectlabel");
+    } else {
+      return ""
+    }
+  },
+
+  getObjectCoord: function(objectType, axis){
+    if ((objectType == this.statusmap.get("objectlabel")) || (objectType == "any")) {
+      return this.statusmap.get("object" + axis);
+    } else {
+      return 0
+    }
+  },
+
+  // For height and width (currently not used)
+  getObjectDims: function(objectType, dim){
+    if ((objectType == this.statusmap.get("objectlabel")) || (objectType == "any")) {
+      return this.statusmap.get("object" + dim);
+    } else {
+      return 0
+    }
+  },
+
+  getObjectSize: function(objectType){
+    if ((objectType == this.statusmap.get("objectlabel")) || (objectType == "any")) {
+      return this.statusmap.get("objectheight") * this.statusmap.get("objectwidth")
+    } else {
+      return 0
+    }
+  },
+
+  getObjectConfidence: function(objectType){
+    if ((objectType == this.statusmap.get("objectlabel")) || (objectType == "any")) {
+      return this.statusmap.get("objectconfidence");
+    } else {
+      return 0
+    }
+  },
+
+
   /** Activates/deactivates the detection of each of the 4 different color-blobs supported */
   configureBlobDetection: function (red, green, blue, custom) {
     var message = JSON.stringify({
@@ -1066,6 +1139,7 @@ Remote.prototype = {
     return this.statusmap.get("qrid");
 
   },//ENDOF getQRId
+
 
   /**********************************************/
   /* ENDOF VISION-BASED INTERACTION FUNCTIONS   *
@@ -1674,6 +1748,50 @@ Remote.prototype = {
 
       this.callbackmap.get("onQRDisappear")();
 
+
+    }
+
+    //TODO: did I do this right?
+    //OBJECT DETECTION
+    else if (msg.name == "DETECTED_OBJECT") {
+      this.statusmap.set("detectedobjectmessage", JSON.stringify(msg))
+      // text of msg:
+      //{"name":"DETECTED_OBJECT","value":{"id":"APPLE", "label":"apple", "posx":"236", "posy":"581",
+      //   "width":"80", "height":"41", "confidence":"0.65509", "timestamp":"63929390965399}"}
+      //empty object: id and label = "", everything else 0 (except timestamp)
+      // python just works with "label", but maybe store ID just to be safe
+
+      // Only trigger onObjectAppears if the label ! = "" and is diff from the previous
+      if ((msg.value["label"] != this.statusmap.get("objectlabel")) && (msg.value["label"] != "")) {
+        this.callCallback("onObjectAppear")
+      };
+
+      this.statusmap.set("objectid", msg.value["id"]);
+      this.statusmap.set("objectlabel", msg.value["label"]);
+
+      this.statusmap.set("objectx", parseInt(msg.value["posx"]));
+      this.statusmap.set("objecty", parseInt(msg.value["posy"]));
+      this.statusmap.set("objectwidth", parseInt(msg.value["width"]));
+      this.statusmap.set("objectheight", parseInt(msg.value["height"]));
+      this.statusmap.set("objectconfidence", parseFloat(msg.value["confidence"]));
+      // Do I need timestamp for any reason?
+
+      //TODO: is there any reason why other callbacks use the callCallback method
+      // while QR directly calls this.statusmap.get(callbackName)();  ?
+
+      // Similar callbacks: colorblob and when a qr code is detected just continually 
+      //    trigger if you keep looking at same blob
+      // Wheras when a QR code appears will only trigger once (or if it moves out of frame and back)
+      //   and face appears/ disappears too
+
+      // TODO: decide what method we want for the object callback
+      // for now: it'll continuously trigger when see any object
+
+      // TODO: why isn't this triggering even when not seeing any object? should trigger whenever 
+      // get a message
+      // Answer: no message is sent if not currently seeing any object, but will send continuous
+      // messages when detecting object even if properties have not changed
+      this.callCallback("onNewObject");
 
     }
 

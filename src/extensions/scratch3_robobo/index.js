@@ -366,7 +366,6 @@ class Scratch3Robobo {
                     blockType: BlockType.COMMAND,
 
                 },
-
                 {
                     opcode: 'readColorBlob',
                     text: 'Read  [COLOR] blob [TYPE]',
@@ -503,6 +502,39 @@ class Scratch3Robobo {
 
                 },
                 {
+                    opcode: 'readDetectedObject',
+                    // TODO: Alternatively: Read [PROPERTY] of detected [OBJECT]
+                    text: 'Read [OBJECT] object [PROPERTY]',
+                    blockType: BlockType.REPORTER,
+                    arguments: {
+                        // could get rid of the first menu entirely and just use 
+                        // 'any' as the default? but then might take too long to check
+                        // if (label = __) , get x    and x might be diff object already
+                        OBJECT: {
+                            type: ArgumentType.STRING,
+                            // TODO: change default to 'bottle' once sim is fixed
+                            defaultValue: 'apple',
+                            menu: 'objectmenu',
+                        },
+                        PROPERTY: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'x',
+                            menu: 'detectedobjectmenu',
+                        }
+                    }
+                },
+                {
+                  opcode: 'startObjectDetection',
+                  text: 'Activate object recognition',
+                  blockType: BlockType.COMMAND,
+                },
+                {
+                    opcode: 'stopObjectDetection',
+                    // TODO: say turn off or just stop?
+                    text: "Turn off object recognition",
+                    blockType: BlockType.COMMAND,
+                },
+                {
                     opcode: 'onClapDetected',
                     text: 'When clap is detected',
                     blockType: BlockType.HAT,
@@ -571,6 +603,28 @@ class Scratch3Robobo {
                     text: 'When a QR code disappears',
                     blockType: BlockType.HAT,
                 },
+                {
+                    opcode: 'onObjectDetected',
+                    // Todo: is the text too wordy?
+                    // Right now, this continually triggers when any object is detected
+                    text: 'When [OBJECT] object is detected',
+                    blockType: BlockType.HAT,
+                    arguments: {
+                        OBJECT: {
+                            type: ArgumentType.STRING,
+                            defaultValue: 'apple',
+                            menu: 'objectmenu',
+                        }
+                    }
+                },
+                {   // This block will only trigger if the label of an object
+                    // is different from the label of the previous detected object
+                    opcode: 'onNewObjectDetected',
+                    // TODO: Should I change the tet to "When an object appears" to make it
+                    // more similar to the QR code one?
+                    text: 'When a new object is detected',
+                    blockType: BlockType.HAT,
+                },
             ],
             menus: {
                 // Required: an identifier for this menu, unique within this extension.
@@ -627,7 +681,18 @@ class Scratch3Robobo {
                 ],
                 qrmenu: [
                     'id', 'x', 'y', 'size'
-                ]
+                ],
+                objectmenu: [
+                    // TODO: right now only contains objects found in sim
+                    // is robobo capital or no??? - I think no
+                    'apple','orange', 'bottle', 'cup', 'dog', 'book', 'person', 'robobo', 'any'
+                ],
+                detectedobjectmenu: [
+                    // TODO: Right now I have all the same attributes as in Python
+                    // maybe don't need confidence?
+                    'x', 'y', 'size', 'confidence', 'label'
+                ],
+
             },
         };
     }
@@ -672,6 +737,8 @@ class Scratch3Robobo {
             this.remote.registerCallback('onQR', () => { this.qrDetected = true; });
             this.remote.registerCallback('onQRAppear', () => { this.qrAppear = true; });
             this.remote.registerCallback('onQRDisappear', () => { this.qrDisappear = true; });
+            this.remote.registerCallback('onNewObject', () => { this.objectDetected = true; });
+            this.remote.registerCallback('onObjectAppear', () => { this.objectAppear = true; });
             this.remote.connect();
 
             //Subscribes to "PROJECT_STOP_ALL" event (stop button on gui)
@@ -693,6 +760,72 @@ class Scratch3Robobo {
     isConnected() {
         return this.remote.isConnected();
     }
+
+
+    // TODO: move these to where they should actually go in stack
+    // TODO: Add proper docstrings
+    readDetectedObject(args, util) {
+        const { OBJECT, PROPERTY } = args;
+        //return this.remote.readDetectedObject();
+        switch (PROPERTY) {
+            case 'label':
+                return this.remote.getObjectLabel(OBJECT);
+                //return this.remote.readDetectedObject()
+            case 'x':
+                return this.remote.getObjectCoord(OBJECT, PROPERTY);
+            case 'y':
+                return this.remote.getObjectCoord(OBJECT, PROPERTY);
+            case 'size':
+                return this.remote.getObjectSize(OBJECT);
+            case 'confidence':
+                return this.remote.getObjectConfidence(OBJECT);
+            default:
+                return this.remote.getObjectLabel(OBJECT);
+        }
+    }
+
+    startObjectDetection(args, util){
+        // Do I need args and util for this???
+        this.remote.startObjectDetection();
+    }
+
+    stopObjectDetection(args, util){
+        this.remote.stopObjectDetection();
+
+    }
+
+    onObjectDetected(args) {
+        // TODO: it's kind of messy that I have filtering here for this block but 
+        // filtering in remotelib for readDetectedObject (also having to use 'any' to read
+        // the current label stored in statusmap); should I make the blocks more constent?
+        const { OBJECT } = args;
+
+        if (this.objectDetected) {
+            // always reset the object detection
+            this.objectDetected = false;
+            // but only return True if the detected object actually matches the target
+            // or if any object is okay
+            if ((this.remote.getObjectLabel('any') == OBJECT) || (OBJECT == 'any')) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    } 
+
+    onNewObjectDetected() {
+        if (this.objectAppear) {
+            this.objectAppear = false;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    /// End object detection blocks
+
+
 
 
     baseActuationTitle(args, util) {
