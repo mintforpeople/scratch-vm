@@ -619,10 +619,10 @@ class Scratch3Robobo {
                 },
                 {   // This block will only trigger if the label of an object
                     // is different from the label of the previous detected object
-                    opcode: 'onNewObjectDetected',
+                    opcode: 'onNewObjectAppears',
                     // TODO: Should I change the tet to "When an object appears" to make it
                     // more similar to the QR code one?
-                    text: 'When a new object is detected',
+                    text: 'When a new object appears',
                     blockType: BlockType.HAT,
                 },
             ],
@@ -815,7 +815,7 @@ class Scratch3Robobo {
         }
     } 
 
-    onNewObjectDetected() {
+    onNewObjectAppears() {
         if (this.objectAppear) {
             this.objectAppear = false;
             return true;

@@ -248,6 +248,7 @@ Remote.prototype = {
     this.setIRValue('Back-L', 0);
     this.resetSensors();
   }, //ENDOF connect
+
   filterMovement(speed, axis) {
     if (speed == 0) {
       return true;
@@ -1304,6 +1305,17 @@ Remote.prototype = {
     this.statusmap.set("claps", 0);
   },
 
+  resetObjectDetection: function () {
+    // Reset the object properties to those of "no object found"
+    this.statusmap.set("objectid", "");
+    this.statusmap.set("objectlabel", "");
+    this.statusmap.set("objectx", 0);
+    this.statusmap.set("objecty", 0);
+    this.statusmap.set("objectwidth", 0);
+    this.statusmap.set("objectheight", 0);
+    this.statusmap.set("objectconfidence", 0);
+  },
+
   resetSensors: function () {
 
     this.resetFaceSensor();
@@ -1325,6 +1337,8 @@ Remote.prototype = {
     this.resetNoteSensor();
 
     this.resetClapSensor();
+
+    this.resetObjectDetection();
 
   },
 
